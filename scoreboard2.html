@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Papan Skor Voli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#d81f2a;
+    --maroon:#7a0f16;
+    --navy:#0e1a34;
+    --grey-bg:#e7e9ea;
+    --dot:rgba(150,150,150,.35);
+    --score-font: fantasy, 'Black Ops One', 'Arial Narrow', sans-serif;
+    --score-scale:1;
+    --score-color:#fff;
+    --score-stroke:#d81f2a;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; }
+  body{
+    font-family:'Segoe UI', Arial, sans-serif;
+    height:100vh; width:100vw; overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+  }
+
+  .stage{
+    position:relative; width:100%; height:100%;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(160deg,#f4f5f6 0%,var(--grey-bg) 55%,#f4f5f6 100%);
+    overflow:hidden;
+  }
+
+  .bg-dots{ position:absolute; inset:0;
+    background-image:radial-gradient(circle, var(--dot) 1.6px, transparent 1.8px);
+    background-size:16px 16px; opacity:.55; pointer-events:none; }
+  .corner{ position:absolute; pointer-events:none; }
+  .corner-tl{ top:-8%; left:-10%; width:46%; height:34%; background:linear-gradient(135deg,var(--maroon),var(--red)); clip-path:polygon(0 0, 100% 0, 0 100%); }
+  .corner-tr{ top:-10%; right:-12%; width:40%; height:20%; background:linear-gradient(225deg,var(--maroon),var(--red)); clip-path:polygon(100% 0, 100% 100%, 0 0); }
+  .corner-bl{ bottom:-10%; left:-12%; width:42%; height:26%; background:linear-gradient(45deg,var(--maroon),var(--red)); clip-path:polygon(0 100%, 100% 100%, 0 0); }
+  .corner-br{ bottom:-9%; right:-11%; width:48%; height:36%; background:linear-gradient(315deg,var(--maroon),var(--red)); clip-path:polygon(100% 100%, 0 100%, 100% 0); }
+  .edge-bar{ position:absolute; top:0; bottom:0; width:14px; background:var(--red); pointer-events:none; }
+  .edge-left{ left:0; } .edge-right{ right:0; }
+
+  .content{
+    position:relative; z-index:2;
+    width:100%; height:100%;
+    display:flex; flex-direction:column; justify-content:space-between;
+    padding:clamp(10px,2vh,26px) clamp(14px,3vw,46px);
+    gap:clamp(6px,1.4vh,16px);
+  }
+
+  /* Sponsors — single shared white background, logos have no background of their own */
+  .sponsors{
+    display:flex; align-items:center; justify-content:center; gap:clamp(10px,2vw,26px);
+    flex-wrap:wrap; align-self:center; max-width:100%;
+    background:rgba(255,255,255,.92); border-radius:14px; padding:10px 26px;
+    box-shadow:0 4px 14px rgba(0,0,0,.1);
+  }
+  .sponsors:empty{ display:none; padding:0; }
+  .sponsor-logo{ position:relative; max-height:clamp(38px,6.5vh,72px); max-width:clamp(80px,14vw,170px);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .sponsor-logo img{ max-height:clamp(34px,6vh,66px); max-width:clamp(72px,13vw,160px); width:auto; height:auto; object-fit:contain; display:block; }
+  .sponsor-remove{ position:absolute; top:-8px; right:-8px; width:20px; height:20px; border-radius:50%;
+    background:var(--red); color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center;
+    justify-content:center; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,.3); }
+  .sponsor-add{ height:clamp(38px,6.5vh,72px); width:clamp(38px,6.5vh,72px); border:2px dashed #b8b8b8; border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:24px; color:#999; cursor:pointer; }
+  .sponsors.clean .sponsor-add{ display:none; }
+  .sponsors.clean .sponsor-remove{ display:none; }
+
+  /* Team header */
+  .team-header{ display:flex; align-items:center; width:100%; min-width:0; }
+  .banner{ flex:1; min-width:0; height:clamp(46px,7vh,70px);
+    background:linear-gradient(90deg, var(--navy) 60%, #4a5a8a 100%);
+    display:flex; align-items:center; position:relative; overflow:hidden; }
+  .banner-a{ justify-content:flex-start; padding-left:16px; margin-right:-14px; clip-path:polygon(0 0,100% 0,94% 100%,0% 100%); }
+  .banner-b{ background:linear-gradient(270deg, var(--navy) 60%, #4a5a8a 100%); justify-content:flex-end; padding-right:16px; margin-left:-14px; clip-path:polygon(6% 0,100% 0,100% 100%,0 100%); }
+  .team-name{ display:block; color:#fff; font-weight:800; letter-spacing:.5px; text-transform:uppercase;
+    font-size:clamp(14px,2.6vw,28px); outline:none; cursor:text; white-space:nowrap; max-width:100%; }
+  .crest{ width:clamp(56px,8.5vw,88px); height:clamp(56px,8.5vw,88px); background:transparent; border:none;
+    display:flex; align-items:center; justify-content:center; z-index:3;
+    font-size:clamp(22px,3vw,34px); cursor:pointer; flex-shrink:0; overflow:hidden;
+    text-shadow:0 1px 4px rgba(0,0,0,.35); }
+  .crest img{ width:100%; height:100%; object-fit:contain; }
+  .crest-a{ margin-right:-6px; } .crest-b{ margin-left:-6px; }
+  .center-score{ background:#111; color:#fff; font-weight:400; letter-spacing:1px; font-family:var(--score-font);
+    font-size:clamp(20px,3.6vw,38px); padding:6px 10px; width:clamp(120px,15vw,175px); text-align:center; z-index:2;
+    cursor:pointer; flex-shrink:0; font-variant-numeric:tabular-nums; margin:0 clamp(10px,2vw,22px); }
+
+  .mid-row{ flex:1; display:flex; align-items:center; justify-content:space-evenly; min-height:0; }
+  /* score-scale transform lives on the WRAP so the floating minus button scales together with the number */
+  .side-score-wrap{ position:relative; width:clamp(70px,12vw,150px); text-align:center; flex-shrink:0; cursor:pointer; overflow:visible;
+    transform:scale(var(--score-scale)); transform-origin:center center; }
+  .side-score{ display:inline-block; font-family:var(--score-font); font-size:clamp(60px,13vw,150px); line-height:1; color:var(--score-color);
+    -webkit-text-stroke:clamp(4px,1.1vw,1px) var(--score-stroke); text-shadow:0 10px 16px rgba(0,0,0,.35); }
+
+  .center-col{ flex:1; max-width:20%; display:flex; flex-direction:column; align-items:center; gap:clamp(4px,0.9vh,10px); min-height:0; }
+
+  .sets-row{ display:flex; align-items:center; justify-content:center; gap:clamp(8px,2vw,18px); }
+  .sets-box{ position:relative; min-width:clamp(56px,9vw,100px); width:auto; background:var(--red); color:#fff; text-align:center; font-family:var(--score-font);
+    font-size:clamp(26px,4.5vw,50px); padding:clamp(4px,1vh,10px) 10px; border-radius:4px; box-shadow:0 6px 14px rgba(0,0,0,.25); cursor:pointer;
+    flex-shrink:0; box-sizing:border-box; }
+  .sets-label{ color:#555; font-weight:800; font-size:clamp(11px,1.6vw,15px); letter-spacing:1px; }
+
+  .stat-row{ width:100%; background:var(--navy); border-radius:6px; display:flex; align-items:center;
+    justify-content:space-between; padding:clamp(3px,0.7vh,7px) clamp(8px,1.4vw,14px); }
+  .stat-num{ position:relative; font-family:var(--score-font); color:#fff; font-size:clamp(26px,4.4vw,44px); min-width:40px; width:auto;
+    padding:0 6px; text-align:center; cursor:pointer; flex-shrink:0; box-sizing:border-box; }
+  .stat-label{ text-align:center; flex:1; }
+  .stat-label .big{ color:#fff; font-weight:900; font-size:clamp(16px,2.6vw,26px); line-height:1.05; font-family:'Segoe UI',Arial,sans-serif; }
+  .stat-label .small{ color:#cfd6e6; font-weight:600; font-size:clamp(7px,1vw,10px); letter-spacing:.5px; margin-top:1px; }
+
+  .set-history{ display:grid; grid-template-columns:repeat(5, 1fr); gap:clamp(4px,1vw,10px); width:100%; }
+  .set-box{ display:flex; flex-direction:column; border-radius:4px; overflow:hidden; box-shadow:0 3px 8px rgba(0,0,0,.15); }
+  .set-box-head{ background:var(--red); color:#fff; text-align:center; font-weight:800; font-size:clamp(11px,1.8vw,17px); padding:5px 0; }
+  .set-box-body{ background:#fff; color:#111; text-align:center; font-family:var(--score-font); font-size:clamp(14px,2.6vw,26px);
+    padding:clamp(8px,1.6vh,16px) 4px; outline:none; cursor:text; flex:1; }
+
+  /* Floating minus button (edit mode) */
+  .float-minus{ position:absolute; top:-8px; right:-8px; width:22px; height:22px; border-radius:50%;
+    background:#1a1a1a; color:#fff; font-weight:800; font-size:15px; display:none; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.45); z-index:20; border:2px solid #fff; }
+  body.edit-mode .float-minus{ display:flex; }
+
+  .ctrl-tab{ position:fixed; bottom:10px; right:10px; z-index:50; width:34px; height:34px; border-radius:50%;
+    background:rgba(0,0,0,.35); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; }
+
+  /* Settings popup: draggable floating card */
+  .controls{ position:fixed; bottom:56px; right:10px; z-index:49; background:rgba(15,15,20,.96); color:#fff;
+    display:none; flex-direction:column; width:min(340px,92vw); max-height:74vh; border-radius:14px;
+    box-shadow:0 16px 40px rgba(0,0,0,.45); overflow:hidden; }
+  .controls.open{ display:flex; }
+  .controls-header{ cursor:grab; background:rgba(255,255,255,.06); padding:10px 8px 10px 16px;
+    display:flex; align-items:center; justify-content:space-between; font-weight:800; font-size:13px;
+    letter-spacing:.5px; user-select:none; flex-shrink:0; }
+  .controls-header:active{ cursor:grabbing; }
+  .controls-header-actions{ display:flex; align-items:center; gap:6px; }
+  .controls-close{ width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,.12); display:flex;
+    align-items:center; justify-content:center; cursor:pointer; font-size:15px; }
+  .controls-close:hover{ background:rgba(255,255,255,.22); }
+  .controls-body{ display:flex; flex-wrap:wrap; gap:8px; padding:12px 14px; align-items:center; justify-content:center;
+    overflow-y:auto; }
+  .controls button{ background:#2c2c34; color:#fff; border:none; border-radius:6px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; }
+  .controls button:hover{ background:#3d3d46; }
+  .controls .divider{ width:100%; height:1px; background:rgba(255,255,255,.15); margin:2px 0; }
+  .controls label.inline{ display:flex; align-items:center; gap:6px; font-size:12px; opacity:.85; }
+  .controls input[type=color]{ width:34px; height:28px; border:none; border-radius:6px; padding:0; background:none; cursor:pointer; }
+  .controls input[type=number]{ width:64px; padding:5px 6px; border-radius:6px; border:1px solid #444; background:#1c1c22; color:#fff; }
+  .controls input[type=range]{ width:110px; }
+  .controls select{ padding:5px 6px; border-radius:6px; border:1px solid #444; background:#1c1c22; color:#fff; font-size:12px; }
+  input[type=file]{ display:none; }
+
+  /* Ads panel list */
+  .ads-section{ width:100%; }
+  .ad-row{ display:flex; align-items:center; gap:6px; padding:5px 6px; background:rgba(255,255,255,.05); border-radius:6px; }
+  .ad-icon{ font-size:14px; flex-shrink:0; }
+  .ad-name{ flex:1; min-width:0; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ad-row button{ padding:4px 8px; font-size:12px; flex-shrink:0; }
+  .ad-empty-note{ opacity:.55; font-size:12px; padding:4px 2px; }
+
+  /* Fullscreen ad overlay */
+  .ad-overlay{ position:fixed; inset:0; z-index:300; background:#000; display:none; align-items:center; justify-content:center; cursor:pointer; }
+  .ad-overlay.open{ display:flex; }
+  .ad-overlay video{ width:100%; height:100%; object-fit:contain; display:none; background:#000; }
+  .ad-overlay.mode-video video{ display:block; }
+  .ad-audio-visual{ display:none; flex-direction:column; align-items:center; gap:16px; color:#fff; text-align:center; padding:20px; }
+  .ad-overlay.mode-audio .ad-audio-visual{ display:flex; }
+  .ad-audio-icon{ font-size:70px; animation:adPulse 1.4s ease-in-out infinite; }
+  @keyframes adPulse{ 0%,100%{ transform:scale(1); opacity:.85; } 50%{ transform:scale(1.12); opacity:1; } }
+  .ad-audio-name{ font-size:20px; font-weight:700; letter-spacing:.4px; max-width:80vw; word-break:break-word; }
+  .ad-audio-hint{ font-size:12px; opacity:.55; }
+  .ad-next-btn{ background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.3); border-radius:20px;
+    padding:8px 18px; font-size:13px; cursor:pointer; }
+  .ad-next-btn:hover{ background:rgba(255,255,255,.22); }
+
+  /* Modal popup (Guide / Shortcuts) */
+  .modal-backdrop{ position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.55);
+    display:none; align-items:center; justify-content:center; padding:20px; }
+  .modal-backdrop.open{ display:flex; }
+  .modal-box{ background:#1c1c22; color:#fff; width:min(440px,92vw); max-height:80vh; overflow-y:auto;
+    border-radius:14px; box-shadow:0 20px 50px rgba(0,0,0,.5); }
+  .modal-header{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px;
+    font-weight:800; font-size:15px; border-bottom:1px solid rgba(255,255,255,.1); position:sticky; top:0; background:#1c1c22; }
+  .modal-close{ cursor:pointer; font-size:20px; line-height:1; opacity:.7; }
+  .modal-close:hover{ opacity:1; }
+  .modal-body{ padding:16px 18px; font-size:13px; line-height:1.75; opacity:.92; }
+  .modal-body b{ color:#fff; }
+  .modal-body p{ margin:0 0 10px; }
+
+  /* Shortcut customize grid */
+  .shortcut-grid{ display:grid; grid-template-columns:1fr 60px; gap:8px 10px; align-items:center; font-size:13px; }
+  .shortcut-grid input{ width:100%; text-align:center; text-transform:uppercase; padding:6px; border-radius:6px;
+    border:1px solid #444; background:#141418; color:#fff; font-weight:700; }
+  .shortcut-actions{ display:flex; gap:8px; margin-top:16px; }
+  .shortcut-actions button{ flex:1; background:#2c2c34; color:#fff; border:none; border-radius:6px; padding:9px 10px; font-size:13px; font-weight:700; cursor:pointer; }
+  .shortcut-actions button:hover{ background:#3d3d46; }
+  .shortcut-print-btn{ width:100%; margin-top:10px; background:var(--red) !important; }
+  .shortcut-print-btn:hover{ background:#b81823 !important; }
+
+  /* Printable control sheet (hidden on screen, shown only via print) */
+  .print-sheet{ display:none; }
+  @media print{
+    body *{ visibility:hidden; }
+    #printSheet, #printSheet *{ visibility:visible; }
+    #printSheet{ display:block !important; position:absolute; top:0; left:0; width:100%; padding:40px; font-family:'Segoe UI',Arial,sans-serif; color:#111; }
+    #printSheet h1{ font-size:24px; margin:0 0 4px; }
+    #printSheet .psub{ font-size:13px; color:#555; margin-bottom:26px; }
+    #printSheet .print-grid{ display:grid; grid-template-columns:1fr 1fr; gap:0 44px; }
+    #printSheet .print-item{ display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid #ddd; }
+    #printSheet .print-key{ display:inline-flex; align-items:center; justify-content:center; min-width:36px; height:32px; padding:0 9px;
+      border:2px solid #222; border-radius:7px; font-weight:800; font-family:monospace; font-size:16px; background:#f4f4f4; }
+    #printSheet .print-label{ font-size:14px; font-weight:600; }
+    #printSheet .print-footer{ margin-top:28px; font-size:11px; color:#777; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="stage" id="stage">
+    <div class="bg-dots" id="bgDots"></div>
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+    <div class="edge-bar edge-left"></div>
+    <div class="edge-bar edge-right"></div>
+
+    <div class="content">
+
+      <div class="sponsors clean" id="sponsors"></div>
+
+      <div class="team-header">
+        <div class="banner banner-a"><span class="team-name" id="nameA" contenteditable spellcheck="false">TERATAI KORPS BRIMOB</span></div>
+        <div class="crest crest-a" id="crestA" data-team="A">🛡️</div>
+        <div class="center-score" id="centerScore" title="Klik = mulai/jeda, klik kanan = reset">00:00</div>
+        <div class="crest crest-b" id="crestB" data-team="B">🏐</div>
+        <div class="banner banner-b"><span class="team-name" id="nameB" contenteditable spellcheck="false">CINUS VC</span></div>
+      </div>
+
+      <div class="mid-row">
+        <div class="side-score-wrap" id="scoreA" data-team="A"><div class="side-score">11</div></div>
+
+        <div class="center-col">
+          <div class="sets-row">
+            <div class="sets-box" id="setsA" data-team="A">0</div>
+            <div class="sets-label">SET</div>
+            <div class="sets-box" id="setsB" data-team="B">0</div>
+          </div>
+
+          <div class="stat-row" data-stat="vc">
+            <div class="stat-num" data-team="A">0</div>
+            <div class="stat-label"><div class="big">VC</div><div class="small">VIDEO CHALLENGE</div></div>
+            <div class="stat-num" data-team="B">0</div>
+          </div>
+          <div class="stat-row" data-stat="to">
+            <div class="stat-num" data-team="A">0</div>
+            <div class="stat-label"><div class="big">T-O</div><div class="small">TIME-OUTS</div></div>
+            <div class="stat-num" data-team="B">0</div>
+          </div>
+          <div class="stat-row" data-stat="sub">
+            <div class="stat-num" data-team="A">0</div>
+            <div class="stat-label"><div class="big">SUB</div><div class="small">SUBSTITUTIONS</div></div>
+            <div class="stat-num" data-team="B">0</div>
+          </div>
+        </div>
+
+        <div class="side-score-wrap" id="scoreB" data-team="B"><div class="side-score">11</div></div>
+      </div>
+
+      <div class="set-history" id="setHistory"></div>
+
+    </div>
+
+    <div class="ctrl-tab" id="ctrlTab" title="Buka/tutup kontrol">⚙</div>
+    <div class="controls" id="controls">
+      <div class="controls-header" id="controlsHeader">
+        <span>⚙ PENGATURAN</span>
+        <div class="controls-header-actions">
+          <span class="controls-close" id="controlsCenterBtn" title="Tengahkan panel">🎯</span>
+          <span class="controls-close" id="controlsClose" title="Tutup">×</span>
+        </div>
+      </div>
+      <div class="controls-body">
+        <button id="guideBtn">📖 Panduan</button>
+        <div class="divider"></div>
+        <button id="endSetBtn">Akhiri Set →</button>
+        <button id="swapBtn">Tukar Sisi</button>
+        <button id="resetSetBtn">Reset Skor Set</button>
+        <button id="resetAllBtn">Reset Semua</button>
+        <button id="fsBtn">Layar Penuh</button>
+        <div class="divider"></div>
+        <button id="timerToggleBtn">▶ / ⏸ Timer</button>
+        <button id="timerMinus">−10 dtk</button>
+        <button id="timerPlus">+10 dtk</button>
+        <button id="timerResetBtn">Reset Timer</button>
+        <div class="divider"></div>
+        <label class="inline">Ukuran Skor <input type="range" id="scoreSizeInput" min="50" max="500" value="100"></label>
+        <div class="divider"></div>
+        <label class="inline">Font Skor
+          <select id="fontSelect">
+            <option value="default">Default</option>
+            <option value="blackops">Black Ops One</option>
+            <option value="arialnarrow">Arial Narrow</option>
+            <option value="impact">Impact</option>
+            <option value="arial">Arial</option>
+          </select>
+        </label>
+        <label class="inline">Warna Font <input type="color" id="scoreColorInput" value="#ffffff"></label>
+        <label class="inline">Warna Outline <input type="color" id="scoreStrokeInput" value="#d81f2a"></label>
+        <div class="divider"></div>
+        <button id="sponsorAddBtnPanel">+ Tambah Logo Sponsor</button>
+        <div class="divider"></div>
+        <label class="inline">Warna Latar <input type="color" id="bgColorInput" value="#e7e9ea"></label>
+        <button id="bgImageBtn">Gambar Latar</button>
+        <button id="bgResetBtn">Reset Latar</button>
+        <div class="divider"></div>
+        <div class="ads-section">
+          <div style="font-size:12px;font-weight:800;opacity:.8;margin-bottom:6px;">🎬 IKLAN (VIDEO / AUDIO)</div>
+          <div id="adsList" style="display:flex;flex-direction:column;gap:4px;max-height:150px;overflow-y:auto;margin-bottom:8px;"></div>
+          <button id="adAddBtnPanel" style="width:100%;">+ Tambah Iklan</button>
+        </div>
+        <div class="divider"></div>
+        <button id="shortcutBtn" style="width:100%;">⌨️ Kustomisasi &amp; Cetak Kontrol</button>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="guideBackdrop">
+      <div class="modal-box">
+        <div class="modal-header">📖 Panduan Penggunaan <span class="modal-close" id="guideClose">×</span></div>
+        <div class="modal-body">
+          <p><b>Mode Edit</b> — klik tombol ⚙ di pojok kanan bawah untuk membuka panel pengaturan dan mengaktifkan mode edit. Angka skor/set/VC/T-O/SUB bisa ditambah dengan klik biasa kapan saja. Selama mode edit aktif, tombol "−" kecil muncul di setiap angka, dan menahan (tekan lama) atau klik kanan pada angka akan menguranginya.</p>
+          <p><b>Skor & Statistik</b> — klik angka untuk menambah (bisa di luar mode edit juga). Untuk mengurangi, aktifkan mode edit lalu klik tombol "−" merah, tekan lama, atau klik kanan pada angka.</p>
+          <p><b>Akhiri Set</b> — tombol "Akhiri Set →" mencatat skor set saat ini ke kotak riwayat set, menambah jumlah set pemenang, lalu me-reset skor & statistik untuk set berikutnya. Skor akhir TIDAK direset otomatis, jadi penonton tetap bisa melihat hasil akhir sampai Anda menekan tombol ini.</p>
+          <p><b>Jam Pertandingan</b> — klik jam untuk mulai/jeda saat mode edit tidak aktif. Saat mode edit aktif, klik jam untuk mengetik ulang waktunya secara manual. Klik kanan jam atau tombol "Reset Timer" akan meminta konfirmasi sebelum me-reset.</p>
+          <p><b>Font & Warna Skor</b> — pilih jenis huruf (termasuk Black Ops One), warna isi angka, dan warna outline angka besar dari panel pengaturan.</p>
+          <p><b>Iklan Video/Audio</b> — unggah klip video atau audio di panel pengaturan. Klik ▶ pada daftar iklan untuk memutarnya layar penuh tanpa tombol pemutar, berulang (loop) sampai layar diklik. Volume memudar masuk/keluar agar penonton tidak kaget. Iklan audio mengingat posisi terakhirnya (lanjut dari situ saat diputar lagi) dan bisa ditumpuk sebagai antrean — gunakan tombol "Lagu Berikutnya" di layar untuk berpindah ke iklan audio berikutnya.</p>
+          <p><b>Panel Pengaturan</b> — panel ini bisa digeser (drag) ke posisi mana pun dengan menahan bagian judul di atas. Klik ikon 🎯 di judul panel untuk mengembalikannya ke posisi semula.</p>
+          <p><b>Kustomisasi Kontrol</b> — buka "⌨️ Kustomisasi & Cetak Kontrol" untuk mengganti tombol keyboard pintasan, atau mencetak lembar referensi kontrol.</p>
+          <p><b>Keyboard (default):</b> Q/A skor A, U/J skor B, W/S set A, I/K set B, N akhiri set (hanya saat mode edit aktif) — T timer, F layar penuh, H buka/tutup panel (selalu aktif). Tombol ini dapat diganti lewat menu Kustomisasi Kontrol.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="shortcutBackdrop">
+      <div class="modal-box">
+        <div class="modal-header">⌨️ Kustomisasi Kontrol <span class="modal-close" id="shortcutClose">×</span></div>
+        <div class="modal-body">
+          <div class="shortcut-grid" id="shortcutGrid"></div>
+          <div class="shortcut-actions">
+            <button id="shortcutSaveBtn">Simpan</button>
+            <button id="shortcutResetBtn">Reset Default</button>
+          </div>
+          <button id="printControlsBtn" class="shortcut-print-btn">🖨️ Cetak Lembar Kontrol</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ad-overlay" id="adOverlay">
+      <video id="adVideoEl" playsinline></video>
+      <div class="ad-audio-visual">
+        <div class="ad-audio-icon">🎵</div>
+        <div class="ad-audio-name" id="adAudioName"></div>
+        <button class="ad-next-btn" id="adNextBtn">Lagu Berikutnya ▸</button>
+        <div class="ad-audio-hint">Klik di mana saja untuk berhenti</div>
+      </div>
+    </div>
+
+    <div id="printSheet" class="print-sheet"></div>
+
+    <input type="file" id="fileInput" accept="image/*">
+    <input type="file" id="adFileInput" accept="video/*,audio/*" multiple>
+  </div>
+
+<script>
+const STORAGE_KEY = 'volleyballScoreboard_v4';
+const NUM_SETS = 5;
+
+const DEFAULT_SHORTCUTS = {
+  scoreAPlus:'q', scoreAMinus:'a',
+  scoreBPlus:'u', scoreBMinus:'j',
+  setAPlus:'w', setAMinus:'s',
+  setBPlus:'i', setBMinus:'k',
+  endSet:'n', timer:'t', fullscreen:'f', panel:'h'
+};
+const SHORTCUT_LABELS = {
+  scoreAPlus:'Tambah Skor A', scoreAMinus:'Kurangi Skor A',
+  scoreBPlus:'Tambah Skor B', scoreBMinus:'Kurangi Skor B',
+  setAPlus:'Tambah Set A', setAMinus:'Kurangi Set A',
+  setBPlus:'Tambah Set B', setBMinus:'Kurangi Set B',
+  endSet:'Akhiri Set', timer:'Mulai/Jeda Timer', fullscreen:'Layar Penuh', panel:'Buka/Tutup Panel'
+};
+const FONT_OPTIONS = {
+  default: "fantasy, 'Black Ops One', 'Arial Narrow', sans-serif",
+  blackops: "'Black Ops One', fantasy, sans-serif",
+  arialnarrow: "'Arial Narrow', Arial, sans-serif",
+  impact: "Impact, 'Arial Narrow', sans-serif",
+  arial: "Arial, Helvetica, sans-serif"
+};
+
+let state = {
+  nameA:'TERATAI KORPS BRIMOB', nameB:'CINUS VC',
+  crestA:null, crestB:null,
+  sponsors:[],
+  scoreA:11, scoreB:11,
+  setsA:0, setsB:0,
+  vcA:0, vcB:0, toA:0, toB:0, subA:0, subB:0,
+  sets: Array(NUM_SETS).fill(''),
+  bgColor:null, bgImage:null,
+  timer:{ elapsedMs:0, running:false, startedAt:null },
+  scoreScale:1,
+  scoreFont:'default', scoreColor:'#ffffff', scoreStroke:'#d81f2a',
+  ads:[],
+  shortcuts: Object.assign({}, DEFAULT_SHORTCUTS)
+};
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      state = Object.assign(state, parsed);
+      state.shortcuts = Object.assign({}, DEFAULT_SHORTCUTS, parsed.shortcuts || {});
+    }
+  }catch(e){}
+  render();
+  applyBackground();
+  applyScoreStyle();
+  renderTimer();
+  document.getElementById('scoreSizeInput').value = Math.round(state.scoreScale*100);
+  document.documentElement.style.setProperty('--score-scale', state.scoreScale);
+  document.getElementById('fontSelect').value = state.scoreFont;
+  document.getElementById('scoreColorInput').value = state.scoreColor;
+  document.getElementById('scoreStrokeInput').value = state.scoreStroke;
+  document.getElementById('bgColorInput').value = state.bgColor || '#e7e9ea';
+}
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+const el = {
+  nameA: document.getElementById('nameA'),
+  nameB: document.getElementById('nameB'),
+  crestA: document.getElementById('crestA'),
+  crestB: document.getElementById('crestB'),
+  centerScore: document.getElementById('centerScore'),
+  scoreA: document.getElementById('scoreA'),
+  scoreB: document.getElementById('scoreB'),
+  setsA: document.getElementById('setsA'),
+  setsB: document.getElementById('setsB'),
+  setHistory: document.getElementById('setHistory'),
+  sponsors: document.getElementById('sponsors'),
+  controls: document.getElementById('controls'),
+  ctrlTab: document.getElementById('ctrlTab'),
+  fileInput: document.getElementById('fileInput'),
+  stage: document.getElementById('stage'),
+};
+
+let editMode = false;
+
+function render(){
+  el.nameA.textContent = state.nameA;
+  el.nameB.textContent = state.nameB;
+  el.scoreA.querySelector('.side-score').textContent = state.scoreA;
+  el.scoreB.querySelector('.side-score').textContent = state.scoreB;
+  el.setsA.childNodes[0].nodeValue = state.setsA;
+  el.setsB.childNodes[0].nodeValue = state.setsB;
+
+  el.crestA.innerHTML = state.crestA ? '<img src="'+state.crestA+'">' : '🛡️';
+  el.crestB.innerHTML = state.crestB ? '<img src="'+state.crestB+'">' : '🏐';
+
+  renderSponsors();
+  renderAds();
+
+  document.querySelectorAll('.stat-row').forEach(row=>{
+    const stat = row.dataset.stat;
+    const nums = row.querySelectorAll('.stat-num');
+    nums[0].childNodes[0].nodeValue = state[stat+'A'];
+    nums[1].childNodes[0].nodeValue = state[stat+'B'];
+  });
+
+  el.setHistory.innerHTML = '';
+  for(let i=0;i<NUM_SETS;i++){
+    const box = document.createElement('div');
+    box.className = 'set-box';
+    box.innerHTML = '<div class="set-box-head">SET '+(i+1)+'</div><div class="set-box-body" contenteditable spellcheck="false" data-idx="'+i+'">'+(state.sets[i]||'')+'</div>';
+    el.setHistory.appendChild(box);
+  }
+  document.querySelectorAll('.set-box-body').forEach(b=>{
+    b.addEventListener('input', ()=>{ state.sets[b.dataset.idx] = b.textContent; save(); });
+  });
+
+  fitAllTeamNames();
+  syncNumWidths();
+}
+
+function renderSponsors(){
+  el.sponsors.classList.toggle('clean', !editMode);
+  el.sponsors.innerHTML = '';
+  state.sponsors.forEach((src, i)=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'sponsor-logo';
+    wrap.innerHTML = '<img src="'+src+'">' + (editMode ? '<div class="sponsor-remove" data-idx="'+i+'">×</div>' : '');
+    wrap.addEventListener('click', (e)=>{
+      if(e.target.classList.contains('sponsor-remove')){
+        e.stopPropagation();
+        state.sponsors.splice(Number(e.target.dataset.idx),1);
+        render(); save();
+        return;
+      }
+      if(editMode){ uploadTarget = 'sponsor:'+i; el.fileInput.click(); }
+    });
+    el.sponsors.appendChild(wrap);
+  });
+  if(editMode){
+    const add = document.createElement('div');
+    add.className = 'sponsor-add';
+    add.textContent = '+';
+    add.addEventListener('click', ()=>{ uploadTarget='sponsor:new'; el.fileInput.click(); });
+    el.sponsors.appendChild(add);
+  }
+}
+
+/* ---- shrink-to-fit team names (max 1 line) ---- */
+function fitTeamName(node){
+  node.style.fontSize = '';
+  let fontSize = parseFloat(getComputedStyle(node).fontSize);
+  const minSize = 10;
+  let guard = 0;
+  while(node.scrollWidth > node.clientWidth && fontSize > minSize && guard < 200){
+    fontSize -= 1;
+    node.style.fontSize = fontSize + 'px';
+    guard++;
+  }
+}
+function fitAllTeamNames(){
+  requestAnimationFrame(()=>{ fitTeamName(el.nameA); fitTeamName(el.nameB); });
+}
+let resizeTimer=null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(()=>{ fitAllTeamNames(); syncNumWidths(); }, 120);
+});
+
+/* ---- sets / VC / T-O / SUB numbers share the width of the widest one ---- */
+function syncNumWidths(){
+  const nodes = document.querySelectorAll('.sets-box, .stat-num');
+  if(!nodes.length) return;
+  requestAnimationFrame(()=>{
+    nodes.forEach(n=>{ n.style.minWidth = ''; });
+    let max = 0;
+    nodes.forEach(n=>{ max = Math.max(max, n.getBoundingClientRect().width); });
+    nodes.forEach(n=>{ n.style.minWidth = max + 'px'; });
+  });
+}
+
+/* ---- editable team names ---- */
+[el.nameA, el.nameB].forEach(node=>{
+  node.addEventListener('input', ()=>{
+    if(node===el.nameA) state.nameA = node.textContent;
+    if(node===el.nameB) state.nameB = node.textContent;
+    fitTeamName(node);
+    save();
+  });
+});
+
+/* ---- score adjust (manual — no automatic set-end detection) ---- */
+function adjustScore(team, delta){
+  const key = 'score'+team;
+  state[key] = Math.max(0, state[key]+delta);
+  render(); save();
+}
+/* Manual set-end: keeps the score visible until the operator ends the set on
+   purpose, then swaps it into the set-history box automatically. */
+function endCurrentSet(){
+  const emptyIdx = state.sets.findIndex(s=>!s);
+  const idx = emptyIdx === -1 ? NUM_SETS-1 : emptyIdx;
+  state.sets[idx] = state.scoreA + '-' + state.scoreB;
+  if(state.scoreA > state.scoreB) state.setsA++; else if(state.scoreB > state.scoreA) state.setsB++;
+  state.scoreA = 0; state.scoreB = 0;
+  state.vcA=0; state.vcB=0; state.toA=0; state.toB=0; state.subA=0; state.subB=0;
+  render(); save();
+}
+
+/* ---- generic press-and-hold(=decrement) / tap(=increment) binder ----
+   Tap-to-add works always. Hold/right-click-to-remove and the floating
+   "−" button are edit-mode only. ---- */
+function bindCounter(node, getVal, setVal, opts){
+  opts = opts || {};
+  let timer=null, held=false;
+  const start = ()=>{
+    held=false;
+    if(!editMode) return;
+    timer = setTimeout(()=>{ held=true; setVal(Math.max(0, getVal()-1)); render(); save(); if(opts.afterDec) opts.afterDec(); }, 550);
+  };
+  const end = ()=>{
+    clearTimeout(timer);
+    if(!held){ setVal(getVal()+1); render(); save(); if(opts.afterInc) opts.afterInc(); }
+  };
+  const cancel = ()=> clearTimeout(timer);
+  node.addEventListener('mousedown', start);
+  node.addEventListener('mouseup', end);
+  node.addEventListener('mouseleave', cancel);
+  node.addEventListener('touchstart', start, {passive:true});
+  node.addEventListener('touchend', (e)=>{ e.preventDefault(); end(); });
+  node.addEventListener('contextmenu', (e)=>{
+    e.preventDefault();
+    if(!editMode) return;
+    setVal(Math.max(0,getVal()-1)); render(); save(); if(opts.afterDec) opts.afterDec();
+  });
+}
+function addMinusBtn(parent, onClick){
+  const btn = document.createElement('div');
+  btn.className = 'float-minus';
+  btn.textContent = '−';
+  const stop = (e)=> e.stopPropagation();
+  btn.addEventListener('mousedown', stop);
+  btn.addEventListener('mouseup', stop);
+  btn.addEventListener('touchstart', stop, {passive:true});
+  btn.addEventListener('touchend', stop);
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation(); e.preventDefault();
+    if(!editMode) return;
+    onClick();
+  });
+  parent.appendChild(btn);
+}
+
+bindCounter(el.scoreA, ()=>state.scoreA, v=>state.scoreA=v);
+bindCounter(el.scoreB, ()=>state.scoreB, v=>state.scoreB=v);
+addMinusBtn(el.scoreA, ()=>adjustScore('A',-1));
+addMinusBtn(el.scoreB, ()=>adjustScore('B',-1));
+
+bindCounter(el.setsA, ()=>state.setsA, v=>state.setsA=v);
+bindCounter(el.setsB, ()=>state.setsB, v=>state.setsB=v);
+addMinusBtn(el.setsA, ()=>{ state.setsA=Math.max(0,state.setsA-1); render(); save(); });
+addMinusBtn(el.setsB, ()=>{ state.setsB=Math.max(0,state.setsB-1); render(); save(); });
+
+document.querySelectorAll('.stat-row').forEach(row=>{
+  const stat = row.dataset.stat;
+  const nums = row.querySelectorAll('.stat-num');
+  bindCounter(nums[0], ()=>state[stat+'A'], v=>state[stat+'A']=v);
+  bindCounter(nums[1], ()=>state[stat+'B'], v=>state[stat+'B']=v);
+  addMinusBtn(nums[0], ()=>{ state[stat+'A']=Math.max(0,state[stat+'A']-1); render(); save(); });
+  addMinusBtn(nums[1], ()=>{ state[stat+'B']=Math.max(0,state[stat+'B']-1); render(); save(); });
+});
+
+/* ---- crest & sponsor logo upload ---- */
+let uploadTarget = null;
+el.crestA.addEventListener('click', ()=>{ uploadTarget='crestA'; el.fileInput.click(); });
+el.crestB.addEventListener('click', ()=>{ uploadTarget='crestB'; el.fileInput.click(); });
+
+el.fileInput.addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file || !uploadTarget) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    if(uploadTarget === 'bgImage'){
+      state.bgImage = reader.result; state.bgColor = null;
+      applyBackground(); save();
+    } else if(uploadTarget.startsWith('sponsor:')){
+      const part = uploadTarget.split(':')[1];
+      if(part === 'new'){ state.sponsors.push(reader.result); }
+      else { state.sponsors[Number(part)] = reader.result; }
+      render(); save();
+    } else {
+      state[uploadTarget] = reader.result;
+      render(); save();
+    }
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
+
+/* ---- background ----
+   FIX: when a custom bgColor is chosen we must explicitly clear the
+   background-image to 'none' — setting it to '' only removes the inline
+   override and falls back to the CSS gradient, which visually hides any
+   solid color underneath it (this was why "Warna Latar" looked broken). */
+function applyBackground(){
+  if(state.bgImage){
+    el.stage.style.backgroundImage = 'url(' + state.bgImage + ')';
+    el.stage.style.backgroundSize = 'cover';
+    el.stage.style.backgroundPosition = 'center';
+    el.stage.style.backgroundColor = '';
+  } else if(state.bgColor){
+    el.stage.style.backgroundImage = 'none';
+    el.stage.style.backgroundColor = state.bgColor;
+  } else {
+    el.stage.style.backgroundImage = '';
+    el.stage.style.backgroundColor = '';
+  }
+}
+document.getElementById('bgColorInput').addEventListener('input', (e)=>{
+  state.bgColor = e.target.value; state.bgImage = null;
+  applyBackground(); save();
+});
+document.getElementById('bgImageBtn').addEventListener('click', ()=>{ uploadTarget='bgImage'; el.fileInput.click(); });
+document.getElementById('bgResetBtn').addEventListener('click', ()=>{
+  state.bgColor = null; state.bgImage = null; applyBackground(); save();
+});
+
+/* ---- score size setting ---- */
+document.getElementById('scoreSizeInput').addEventListener('input', (e)=>{
+  state.scoreScale = Number(e.target.value)/100;
+  document.documentElement.style.setProperty('--score-scale', state.scoreScale);
+  save();
+});
+
+/* ---- score font / color / outline ---- */
+function applyScoreStyle(){
+  document.documentElement.style.setProperty('--score-font', FONT_OPTIONS[state.scoreFont] || FONT_OPTIONS.default);
+  document.documentElement.style.setProperty('--score-color', state.scoreColor || '#ffffff');
+  document.documentElement.style.setProperty('--score-stroke', state.scoreStroke || '#d81f2a');
+}
+document.getElementById('fontSelect').addEventListener('change', (e)=>{
+  state.scoreFont = e.target.value; applyScoreStyle(); save();
+});
+document.getElementById('scoreColorInput').addEventListener('input', (e)=>{
+  state.scoreColor = e.target.value; applyScoreStyle(); save();
+});
+document.getElementById('scoreStrokeInput').addEventListener('input', (e)=>{
+  state.scoreStroke = e.target.value; applyScoreStyle(); save();
+});
+
+/* ---- timer ---- */
+function getElapsedMs(){
+  return state.timer.elapsedMs + (state.timer.running ? (Date.now() - state.timer.startedAt) : 0);
+}
+function formatTimer(ms){
+  const totalSec = Math.floor(ms/1000);
+  const m = Math.floor(totalSec/60);
+  const s = totalSec%60;
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+function renderTimer(){ if(!timerEditing) el.centerScore.textContent = formatTimer(getElapsedMs()); }
+function toggleTimer(){
+  if(state.timer.running){
+    state.timer.elapsedMs = getElapsedMs();
+    state.timer.running = false;
+    state.timer.startedAt = null;
+  } else {
+    state.timer.running = true;
+    state.timer.startedAt = Date.now();
+  }
+  save(); renderTimer();
+}
+function resetTimer(){
+  if(!confirm('Reset waktu pertandingan ke 00:00?')) return;
+  state.timer = { elapsedMs:0, running:false, startedAt:null };
+  save(); renderTimer();
+}
+function adjustTimer(deltaSec){
+  const current = getElapsedMs();
+  state.timer.elapsedMs = Math.max(0, current + deltaSec*1000);
+  if(state.timer.running) state.timer.startedAt = Date.now();
+  save(); renderTimer();
+}
+
+/* ---- timer: click toggles play/pause normally; in edit mode, click makes
+   the time directly editable (type mm:ss, blur or Enter to commit) ---- */
+let timerEditing = false;
+function enableTimerEdit(){
+  if(timerEditing) return;
+  if(state.timer.running){
+    state.timer.elapsedMs = getElapsedMs();
+    state.timer.running = false;
+    state.timer.startedAt = null;
+    save();
+  }
+  timerEditing = true;
+  el.centerScore.setAttribute('contenteditable', 'true');
+  el.centerScore.focus();
+  const range = document.createRange();
+  range.selectNodeContents(el.centerScore);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+function commitTimerEdit(){
+  if(!timerEditing) return;
+  timerEditing = false;
+  el.centerScore.setAttribute('contenteditable', 'false');
+  const text = el.centerScore.textContent.trim();
+  const match = text.match(/^(\d{1,3}):([0-5]?\d)$/);
+  if(match){
+    const mins = parseInt(match[1], 10);
+    const secs = parseInt(match[2], 10);
+    state.timer.elapsedMs = (mins*60 + secs) * 1000;
+    save();
+  }
+  renderTimer();
+}
+el.centerScore.addEventListener('click', ()=>{
+  if(editMode) enableTimerEdit();
+  else toggleTimer();
+});
+el.centerScore.addEventListener('blur', commitTimerEdit);
+el.centerScore.addEventListener('keydown', (e)=>{
+  if(timerEditing && e.key === 'Enter'){ e.preventDefault(); el.centerScore.blur(); }
+});
+el.centerScore.addEventListener('contextmenu', (e)=>{ e.preventDefault(); resetTimer(); });
+setInterval(()=>{ if(state.timer.running) renderTimer(); }, 500);
+
+document.getElementById('timerToggleBtn').addEventListener('click', toggleTimer);
+document.getElementById('timerResetBtn').addEventListener('click', resetTimer);
+document.getElementById('timerPlus').addEventListener('click', ()=>adjustTimer(10));
+document.getElementById('timerMinus').addEventListener('click', ()=>adjustTimer(-10));
+
+/* ---- controls panel / edit mode toggle ---- */
+function setEditMode(on){
+  editMode = on;
+  if(!on && timerEditing) el.centerScore.blur(); // commit any in-progress time edit
+  el.controls.classList.toggle('open', on);
+  document.body.classList.toggle('edit-mode', on);
+  renderSponsors();
+}
+el.ctrlTab.addEventListener('click', ()=> setEditMode(!editMode));
+document.getElementById('controlsClose').addEventListener('click', ()=> setEditMode(false));
+document.getElementById('sponsorAddBtnPanel').addEventListener('click', ()=>{ uploadTarget='sponsor:new'; el.fileInput.click(); });
+
+/* ---- center/reset the draggable settings panel position ---- */
+document.getElementById('controlsCenterBtn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  el.controls.style.left = '';
+  el.controls.style.top = '';
+  el.controls.style.right = '';
+  el.controls.style.bottom = '';
+});
+
+/* ---- guide popup ---- */
+const guideBackdrop = document.getElementById('guideBackdrop');
+function openGuide(){ guideBackdrop.classList.add('open'); }
+function closeGuide(){ guideBackdrop.classList.remove('open'); }
+document.getElementById('guideBtn').addEventListener('click', openGuide);
+document.getElementById('guideClose').addEventListener('click', closeGuide);
+guideBackdrop.addEventListener('click', (e)=>{ if(e.target === guideBackdrop) closeGuide(); });
+
+/* ---- draggable settings popup ---- */
+(function(){
+  const panel = el.controls;
+  const header = document.getElementById('controlsHeader');
+  let dragging=false, offsetX=0, offsetY=0;
+  function pointerDown(e){
+    dragging = true;
+    const rect = panel.getBoundingClientRect();
+    const point = e.touches ? e.touches[0] : e;
+    offsetX = point.clientX - rect.left;
+    offsetY = point.clientY - rect.top;
+    panel.style.left = rect.left + 'px';
+    panel.style.top = rect.top + 'px';
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+    document.addEventListener('mousemove', pointerMove);
+    document.addEventListener('mouseup', pointerUp);
+    document.addEventListener('touchmove', pointerMove, {passive:false});
+    document.addEventListener('touchend', pointerUp);
+  }
+  function pointerMove(e){
+    if(!dragging) return;
+    if(e.cancelable) e.preventDefault();
+    const point = e.touches ? e.touches[0] : e;
+    let x = point.clientX - offsetX;
+    let y = point.clientY - offsetY;
+    const maxX = Math.max(0, window.innerWidth - panel.offsetWidth);
+    const maxY = Math.max(0, window.innerHeight - panel.offsetHeight);
+    x = Math.min(Math.max(0, x), maxX);
+    y = Math.min(Math.max(0, y), maxY);
+    panel.style.left = x + 'px';
+    panel.style.top = y + 'px';
+  }
+  function pointerUp(){
+    dragging = false;
+    document.removeEventListener('mousemove', pointerMove);
+    document.removeEventListener('mouseup', pointerUp);
+    document.removeEventListener('touchmove', pointerMove);
+    document.removeEventListener('touchend', pointerUp);
+  }
+  header.addEventListener('mousedown', pointerDown);
+  header.addEventListener('touchstart', pointerDown, {passive:true});
+})();
+
+document.getElementById('endSetBtn').addEventListener('click', endCurrentSet);
+document.getElementById('swapBtn').addEventListener('click', ()=>{
+  [state.nameA,state.nameB]=[state.nameB,state.nameA];
+  [state.crestA,state.crestB]=[state.crestB,state.crestA];
+  [state.scoreA,state.scoreB]=[state.scoreB,state.scoreA];
+  [state.setsA,state.setsB]=[state.setsB,state.setsA];
+  [state.vcA,state.vcB]=[state.vcB,state.vcA];
+  [state.toA,state.toB]=[state.toB,state.toA];
+  [state.subA,state.subB]=[state.subB,state.subA];
+  state.sets = state.sets.map(s=>{
+    if(!s) return s;
+    const parts = s.split('-');
+    return parts[1] + '-' + parts[0];
+  });
+  render(); save();
+});
+document.getElementById('resetSetBtn').addEventListener('click', ()=>{
+  state.scoreA=0; state.scoreB=0;
+  state.vcA=0; state.vcB=0; state.toA=0; state.toB=0; state.subA=0; state.subB=0;
+  render(); save();
+});
+document.getElementById('resetAllBtn').addEventListener('click', ()=>{
+  if(!confirm('Reset seluruh papan skor?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+});
+document.getElementById('fsBtn').addEventListener('click', ()=>{
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+});
+
+/* ==================== ADS: video / audio upload + fullscreen player ==================== */
+const adOverlay = document.getElementById('adOverlay');
+const adVideoEl = document.getElementById('adVideoEl');
+const adAudioName = document.getElementById('adAudioName');
+const adAudioEl = new Audio();
+adAudioEl.loop = true; // loops the current ad until the screen is clicked
+
+let adAudioPositions = {};   // adId -> last playback position in seconds (resume support)
+let activeAd = null;
+let fadeTimer = null;
+const FADE_MS = 1200;
+const FADE_STEP = 50;
+
+function clearFade(){ if(fadeTimer){ clearInterval(fadeTimer); fadeTimer=null; } }
+function fadeVolume(mediaEl, from, to, done){
+  clearFade();
+  mediaEl.volume = Math.min(1, Math.max(0, from));
+  const steps = Math.max(1, Math.round(FADE_MS/FADE_STEP));
+  let i = 0;
+  fadeTimer = setInterval(()=>{
+    i++;
+    const v = from + (to-from) * (i/steps);
+    mediaEl.volume = Math.min(1, Math.max(0, v));
+    if(i >= steps){
+      clearFade();
+      mediaEl.volume = Math.min(1, Math.max(0, to));
+      if(done) done();
+    }
+  }, FADE_STEP);
+}
+
+function renderAds(){
+  const list = document.getElementById('adsList');
+  if(!list) return;
+  list.innerHTML = '';
+  if(!state.ads.length){
+    list.innerHTML = '<div class="ad-empty-note">Belum ada iklan diunggah.</div>';
+    return;
+  }
+  state.ads.forEach((ad, i)=>{
+    const row = document.createElement('div');
+    row.className = 'ad-row';
+    row.innerHTML =
+      '<span class="ad-icon">'+(ad.type==='video' ? '🎬' : '🎵')+'</span>'+
+      '<span class="ad-name" title="'+ad.name.replace(/"/g,'&quot;')+'">'+ad.name+'</span>'+
+      '<button class="ad-play" data-idx="'+i+'">▶</button>'+
+      '<button class="ad-del" data-idx="'+i+'">🗑</button>';
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.ad-play').forEach(b=>{
+    b.addEventListener('click', ()=> playAd(state.ads[Number(b.dataset.idx)]));
+  });
+  list.querySelectorAll('.ad-del').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const idx = Number(b.dataset.idx);
+      const ad = state.ads[idx];
+      if(activeAd && ad && activeAd.id === ad.id) stopAd(true);
+      if(ad) delete adAudioPositions[ad.id];
+      state.ads.splice(idx,1);
+      render(); save();
+    });
+  });
+}
+
+document.getElementById('adAddBtnPanel').addEventListener('click', ()=>{
+  document.getElementById('adFileInput').click();
+});
+document.getElementById('adFileInput').addEventListener('change', (e)=>{
+  const files = Array.from(e.target.files || []);
+  if(!files.length) return;
+  let remaining = files.length;
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const type = file.type.startsWith('video') ? 'video' : 'audio';
+      state.ads.push({
+        id: 'ad_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+        type, name: file.name, src: reader.result
+      });
+      remaining--;
+      if(remaining === 0){ renderAds(); save(); }
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+});
+
+function playAd(ad){
+  if(!ad) return;
+  activeAd = ad;
+  adOverlay.classList.remove('mode-video','mode-audio');
+  adOverlay.classList.add(ad.type === 'video' ? 'mode-video' : 'mode-audio');
+  adOverlay.classList.add('open');
+
+  if(ad.type === 'video'){
+    adAudioEl.pause();
+    adVideoEl.src = ad.src;
+    adVideoEl.loop = true;
+    adVideoEl.muted = false;
+    adVideoEl.volume = 0;
+    adVideoEl.currentTime = 0;
+    const playPromise = adVideoEl.play();
+    if(playPromise && playPromise.catch) playPromise.catch(()=>{});
+    fadeVolume(adVideoEl, 0, 1);
+  } else {
+    adVideoEl.pause();
+    adVideoEl.removeAttribute('src');
+    adVideoEl.load();
+    adAudioName.textContent = ad.name;
+    if(adAudioEl.dataset.adId !== ad.id){
+      adAudioEl.src = ad.src;
+      adAudioEl.dataset.adId = ad.id;
+      adAudioEl.currentTime = adAudioPositions[ad.id] || 0;
+    }
+    adAudioEl.loop = true;
+    adAudioEl.volume = 0;
+    const playPromise = adAudioEl.play();
+    if(playPromise && playPromise.catch) playPromise.catch(()=>{});
+    fadeVolume(adAudioEl, 0, 1);
+  }
+}
+
+function stopAd(instant){
+  if(!activeAd) return;
+  const ad = activeAd;
+  const finish = ()=>{
+    adOverlay.classList.remove('open');
+    if(ad.type === 'video'){
+      adVideoEl.pause();
+      adVideoEl.removeAttribute('src');
+      adVideoEl.load();
+    } else {
+      adAudioEl.pause();
+      adAudioPositions[ad.id] = adAudioEl.currentTime;
+    }
+    activeAd = null;
+  };
+  if(instant){ finish(); return; }
+  if(ad.type === 'video') fadeVolume(adVideoEl, adVideoEl.volume, 0, finish);
+  else fadeVolume(adAudioEl, adAudioEl.volume, 0, finish);
+}
+
+function nextAudioAd(){
+  if(!activeAd || activeAd.type !== 'audio') return;
+  const audioAds = state.ads.filter(a=>a.type === 'audio');
+  if(audioAds.length < 2) return;
+  const curIdx = audioAds.findIndex(a=>a.id === activeAd.id);
+  adAudioPositions[activeAd.id] = adAudioEl.currentTime;
+  const next = audioAds[(curIdx+1) % audioAds.length];
+  playAd(next);
+}
+document.getElementById('adNextBtn').addEventListener('click', (e)=>{ e.stopPropagation(); nextAudioAd(); });
+adOverlay.addEventListener('click', (e)=>{
+  if(e.target.closest('#adNextBtn')) return;
+  stopAd();
+});
+
+/* ==================== SHORTCUT CUSTOMIZATION ==================== */
+const shortcutBackdrop = document.getElementById('shortcutBackdrop');
+function renderShortcutGrid(){
+  const grid = document.getElementById('shortcutGrid');
+  grid.innerHTML = '';
+  Object.keys(SHORTCUT_LABELS).forEach(key=>{
+    const label = document.createElement('div');
+    label.textContent = SHORTCUT_LABELS[key];
+    const input = document.createElement('input');
+    input.maxLength = 1;
+    input.value = (state.shortcuts[key] || '').toUpperCase();
+    input.dataset.key = key;
+    grid.appendChild(label);
+    grid.appendChild(input);
+  });
+}
+function openShortcutModal(){ renderShortcutGrid(); shortcutBackdrop.classList.add('open'); }
+function closeShortcutModal(){ shortcutBackdrop.classList.remove('open'); }
+document.getElementById('shortcutBtn').addEventListener('click', openShortcutModal);
+document.getElementById('shortcutClose').addEventListener('click', closeShortcutModal);
+shortcutBackdrop.addEventListener('click', (e)=>{ if(e.target === shortcutBackdrop) closeShortcutModal(); });
+
+document.getElementById('shortcutSaveBtn').addEventListener('click', ()=>{
+  const inputs = document.querySelectorAll('#shortcutGrid input');
+  const used = new Set();
+  let ok = true;
+  inputs.forEach(inp=>{
+    const v = inp.value.trim().toLowerCase();
+    if(!v || used.has(v)) ok = false;
+    used.add(v);
+  });
+  if(!ok){ alert('Setiap kontrol harus memiliki satu huruf/angka unik.'); return; }
+  inputs.forEach(inp=>{ state.shortcuts[inp.dataset.key] = inp.value.trim().toLowerCase(); });
+  save();
+  closeShortcutModal();
+});
+document.getElementById('shortcutResetBtn').addEventListener('click', ()=>{
+  state.shortcuts = Object.assign({}, DEFAULT_SHORTCUTS);
+  renderShortcutGrid();
+  save();
+});
+
+/* ---- printable control reference sheet ---- */
+function printControls(){
+  const sheet = document.getElementById('printSheet');
+  const rows = Object.keys(SHORTCUT_LABELS).map(key=>{
+    return '<div class="print-item"><span class="print-key">'+(state.shortcuts[key]||'').toUpperCase()+'</span><span class="print-label">'+SHORTCUT_LABELS[key]+'</span></div>';
+  }).join('');
+  sheet.innerHTML =
+    '<h1>Kontrol Papan Skor Voli</h1>'+
+    '<div class="psub">'+state.nameA+' vs '+state.nameB+'</div>'+
+    '<div class="print-grid">'+rows+'</div>'+
+    '<div class="print-footer">Catatan: kontrol dapat diubah lewat menu "Kustomisasi &amp; Cetak Kontrol".</div>';
+  window.print();
+}
+document.getElementById('printControlsBtn').addEventListener('click', printControls);
+
+/* ---- keyboard shortcuts (customizable, ignored while typing anywhere editable) ---- */
+function isTypingContext(){
+  const active = document.activeElement;
+  if(!active) return false;
+  if(active.isContentEditable) return true;
+  const tag = active.tagName;
+  if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  if(active.closest && active.closest('[contenteditable="true"]')) return true;
+  return false;
+}
+document.addEventListener('keydown', (e)=>{
+  if(isTypingContext()) return;
+  const k = e.key.toLowerCase();
+  const sc = state.shortcuts;
+  const editOnlyKeys = [sc.scoreAMinus, sc.scoreBMinus, sc.setAMinus, sc.setBMinus, sc.endSet];
+  if(editOnlyKeys.includes(k) && !editMode) return;
+  switch(k){
+    case sc.scoreAPlus: adjustScore('A',1); return;
+    case sc.scoreAMinus: adjustScore('A',-1); return;
+    case sc.scoreBPlus: adjustScore('B',1); return;
+    case sc.scoreBMinus: adjustScore('B',-1); return;
+    case sc.setAPlus: state.setsA++; break;
+    case sc.setAMinus: state.setsA=Math.max(0,state.setsA-1); break;
+    case sc.setBPlus: state.setsB++; break;
+    case sc.setBMinus: state.setsB=Math.max(0,state.setsB-1); break;
+    case sc.timer: toggleTimer(); return;
+    case sc.endSet: endCurrentSet(); return;
+    case sc.fullscreen: document.getElementById('fsBtn').click(); return;
+    case sc.panel: setEditMode(!editMode); return;
+    default: return;
+  }
+  render(); save();
+  e.preventDefault();
+});
+
+load();
+</script>
+</body>
+</html>
