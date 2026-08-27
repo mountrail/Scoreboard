@@ -18,6 +18,7 @@
     --score-scale:1;
     --score-color:#fff;
     --score-stroke:#d81f2a;
+    --crest-scale:1;
   }
   *{ box-sizing:border-box; }
   html,body{ height:100%; margin:0; }
@@ -81,11 +82,13 @@
   .banner-a{ justify-content:flex-start; padding-left:16px; margin-right:-14px; clip-path:polygon(0 0,100% 0,94% 100%,0% 100%); }
   .banner-b{ background:linear-gradient(270deg, var(--navy) 60%, #4a5a8a 100%); justify-content:flex-end; padding-right:16px; margin-left:-14px; clip-path:polygon(6% 0,100% 0,100% 100%,0 100%); }
   .team-name{ display:block; color:#fff; font-weight:800; letter-spacing:.5px; text-transform:uppercase;
-    font-size:clamp(14px,2.6vw,28px); outline:none; cursor:text; white-space:nowrap; max-width:100%; }
+    font-size:clamp(14px,2.6vw,28px); outline:none; cursor:text; white-space:nowrap; max-width:100%;
+    min-height:clamp(14px,2.6vw,28px); min-width:10px; }
+  .team-name:empty::before{ content:attr(data-placeholder); opacity:.45; text-transform:none; font-weight:600; }
   .crest{ width:clamp(56px,8.5vw,88px); height:clamp(56px,8.5vw,88px); background:transparent; border:none;
     display:flex; align-items:center; justify-content:center; z-index:3;
     font-size:clamp(22px,3vw,34px); cursor:pointer; flex-shrink:0; overflow:hidden;
-    text-shadow:0 1px 4px rgba(0,0,0,.35); }
+    text-shadow:0 1px 4px rgba(0,0,0,.35); transform:scale(var(--crest-scale,1)); transform-origin:center center; }
   .crest img{ width:100%; height:100%; object-fit:contain; }
   .crest-a{ margin-right:-6px; } .crest-b{ margin-left:-6px; }
   .center-score{ background:#111; color:#fff; font-weight:400; letter-spacing:1px; font-family:var(--score-font);
@@ -98,6 +101,9 @@
     transform:scale(var(--score-scale)); transform-origin:center center; }
   .side-score{ display:inline-block; font-family:var(--score-font); font-size:clamp(60px,13vw,150px); line-height:1; color:var(--score-color);
     -webkit-text-stroke:clamp(4px,1.1vw,1px) var(--score-stroke); text-shadow:0 10px 16px rgba(0,0,0,.35); }
+  .score-dot{ width:14px; height:14px; border-radius:50%; background:var(--red); margin:2px auto 0;
+    box-shadow:0 2px 6px rgba(0,0,0,.35); opacity:0; transform:scale(.5); transition:opacity .2s, transform .2s; }
+  .side-score-wrap.scored .score-dot{ opacity:1; transform:scale(1); }
 
   .center-col{ flex:1; max-width:20%; display:flex; flex-direction:column; align-items:center; gap:clamp(4px,0.9vh,10px); min-height:0; }
 
@@ -162,6 +168,19 @@
   .ad-name{ flex:1; min-width:0; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .ad-row button{ padding:4px 8px; font-size:12px; flex-shrink:0; }
   .ad-empty-note{ opacity:.55; font-size:12px; padding:4px 2px; }
+  .ad-audio-tag{ font-size:11px; opacity:.8; margin-left:4px; }
+
+  /* Save / Load slots */
+  .save-slot-list{ display:flex; flex-direction:column; gap:8px; }
+  .save-slot-row{ display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background:rgba(255,255,255,.06); border-radius:8px; padding:8px 10px; }
+  .save-slot-info{ font-size:12px; line-height:1.4; min-width:0; }
+  .save-slot-info span{ opacity:.65; font-size:11px; word-break:break-word; }
+  .save-slot-actions{ display:flex; gap:6px; flex-shrink:0; }
+  .save-slot-actions button{ background:#2c2c34; color:#fff; border:none; border-radius:6px; padding:6px 10px; font-size:12px; font-weight:600; cursor:pointer; }
+  .save-slot-actions button:hover{ background:#3d3d46; }
+  .save-slot-actions .slot-load{ background:var(--red); }
+  .save-slot-actions .slot-load:hover{ background:#b81823; }
 
   /* Fullscreen ad overlay */
   .ad-overlay{ position:fixed; inset:0; z-index:300; background:#000; display:none; align-items:center; justify-content:center; cursor:pointer; }
@@ -235,15 +254,15 @@
       <div class="sponsors clean" id="sponsors"></div>
 
       <div class="team-header">
-        <div class="banner banner-a"><span class="team-name" id="nameA" contenteditable spellcheck="false">TERATAI KORPS BRIMOB</span></div>
+        <div class="banner banner-a"><span class="team-name" id="nameA" contenteditable spellcheck="false" data-placeholder="Nama Tim A">TERATAI KORPS BRIMOB</span></div>
         <div class="crest crest-a" id="crestA" data-team="A">🛡️</div>
         <div class="center-score" id="centerScore" title="Klik = mulai/jeda, klik kanan = reset">00:00</div>
         <div class="crest crest-b" id="crestB" data-team="B">🏐</div>
-        <div class="banner banner-b"><span class="team-name" id="nameB" contenteditable spellcheck="false">CINUS VC</span></div>
+        <div class="banner banner-b"><span class="team-name" id="nameB" contenteditable spellcheck="false" data-placeholder="Nama Tim B">CINUS VC</span></div>
       </div>
 
       <div class="mid-row">
-        <div class="side-score-wrap" id="scoreA" data-team="A"><div class="side-score">11</div></div>
+        <div class="side-score-wrap" id="scoreA" data-team="A"><div class="side-score">11</div><div class="score-dot"></div></div>
 
         <div class="center-col">
           <div class="sets-row">
@@ -269,7 +288,7 @@
           </div>
         </div>
 
-        <div class="side-score-wrap" id="scoreB" data-team="B"><div class="side-score">11</div></div>
+        <div class="side-score-wrap" id="scoreB" data-team="B"><div class="side-score">11</div><div class="score-dot"></div></div>
       </div>
 
       <div class="set-history" id="setHistory"></div>
@@ -300,6 +319,7 @@
         <button id="timerResetBtn">Reset Timer</button>
         <div class="divider"></div>
         <label class="inline">Ukuran Skor <input type="range" id="scoreSizeInput" min="50" max="500" value="100"></label>
+        <label class="inline">Ukuran Logo Klub <input type="range" id="crestSizeInput" min="40" max="250" value="100"></label>
         <div class="divider"></div>
         <label class="inline">Font Skor
           <select id="fontSelect">
@@ -320,10 +340,15 @@
         <button id="bgResetBtn">Reset Latar</button>
         <div class="divider"></div>
         <div class="ads-section">
-          <div style="font-size:12px;font-weight:800;opacity:.8;margin-bottom:6px;">🎬 IKLAN (VIDEO / AUDIO)</div>
+          <div style="font-size:12px;font-weight:800;opacity:.8;margin-bottom:6px;">🎬 IKLAN (VIDEO + AUDIO)</div>
           <div id="adsList" style="display:flex;flex-direction:column;gap:4px;max-height:150px;overflow-y:auto;margin-bottom:8px;"></div>
-          <button id="adAddBtnPanel" style="width:100%;">+ Tambah Iklan</button>
+          <div style="display:flex;gap:6px;">
+            <button id="adAddVideoBtnPanel" style="flex:1;">+ Video</button>
+            <button id="adAddAudioBtnPanel" style="flex:1;">+ Audio</button>
+          </div>
         </div>
+        <div class="divider"></div>
+        <button id="saveLoadBtn" style="width:100%;">💾 Simpan / Muat Game</button>
         <div class="divider"></div>
         <button id="shortcutBtn" style="width:100%;">⌨️ Kustomisasi &amp; Cetak Kontrol</button>
       </div>
@@ -338,7 +363,11 @@
           <p><b>Akhiri Set</b> — tombol "Akhiri Set →" mencatat skor set saat ini ke kotak riwayat set, menambah jumlah set pemenang, lalu me-reset skor & statistik untuk set berikutnya. Skor akhir TIDAK direset otomatis, jadi penonton tetap bisa melihat hasil akhir sampai Anda menekan tombol ini.</p>
           <p><b>Jam Pertandingan</b> — klik jam untuk mulai/jeda saat mode edit tidak aktif. Saat mode edit aktif, klik jam untuk mengetik ulang waktunya secara manual. Klik kanan jam atau tombol "Reset Timer" akan meminta konfirmasi sebelum me-reset.</p>
           <p><b>Font & Warna Skor</b> — pilih jenis huruf (termasuk Black Ops One), warna isi angka, dan warna outline angka besar dari panel pengaturan.</p>
-          <p><b>Iklan Video/Audio</b> — unggah klip video atau audio di panel pengaturan. Klik ▶ pada daftar iklan untuk memutarnya layar penuh tanpa tombol pemutar, berulang (loop) sampai layar diklik. Volume memudar masuk/keluar agar penonton tidak kaget. Iklan audio mengingat posisi terakhirnya (lanjut dari situ saat diputar lagi) dan bisa ditumpuk sebagai antrean — gunakan tombol "Lagu Berikutnya" di layar untuk berpindah ke iklan audio berikutnya.</p>
+          <p><b>Iklan Video/Audio</b> — tambahkan iklan video lewat "+ Video" atau iklan audio lewat "+ Audio" di panel pengaturan. Untuk iklan video, Anda bisa memasang trek audio terpisah dengan tombol 🎵+ pada daftar iklan; jika terpasang, audio terpisah itu yang berbunyi (video tampil bisu), dan jika tidak ada audio terpisah, suara asli videonya sendiri yang diputar. Klik ▶ untuk memutar layar penuh, berulang (loop) sampai layar diklik. Volume selalu memudar masuk/keluar agar penonton tidak kaget. Iklan audio (tanpa video) mengingat posisi terakhirnya dan bisa ditumpuk sebagai antrean — gunakan tombol "Lagu Berikutnya" di layar untuk berpindah ke iklan audio berikutnya.</p>
+          <p><b>Ukuran Logo Klub</b> — geser "Ukuran Logo Klub" di panel pengaturan untuk memperbesar/memperkecil logo tanpa mengubah ukuran lainnya.</p>
+          <p><b>Klik Kanan = Kurangi</b> — klik kanan (RMB) pada skor, set, VC, T-O, atau SUB manapun akan langsung menguranginya satu, kapan saja (tidak perlu mode edit).</p>
+          <p><b>Titik Penanda Skor</b> — titik kecil muncul di bawah skor tim yang baru saja mencetak poin, memudahkan mengetahui siapa yang terakhir mencetak.</p>
+          <p><b>Simpan / Muat Game</b> — gunakan "💾 Simpan / Muat Game" untuk menyimpan seluruh kondisi papan skor ke salah satu slot (seperti save game), dan memuatnya kembali kapan pun dibutuhkan — tanpa perlu file ekspor/impor.</p>
           <p><b>Panel Pengaturan</b> — panel ini bisa digeser (drag) ke posisi mana pun dengan menahan bagian judul di atas. Klik ikon 🎯 di judul panel untuk mengembalikannya ke posisi semula.</p>
           <p><b>Kustomisasi Kontrol</b> — buka "⌨️ Kustomisasi & Cetak Kontrol" untuk mengganti tombol keyboard pintasan, atau mencetak lembar referensi kontrol.</p>
           <p><b>Keyboard (default):</b> Q/A skor A, U/J skor B, W/S set A, I/K set B, N akhiri set (hanya saat mode edit aktif) — T timer, F layar penuh, H buka/tutup panel (selalu aktif). Tombol ini dapat diganti lewat menu Kustomisasi Kontrol.</p>
@@ -360,6 +389,16 @@
       </div>
     </div>
 
+    <div class="modal-backdrop" id="saveLoadBackdrop">
+      <div class="modal-box">
+        <div class="modal-header">💾 Simpan / Muat Game <span class="modal-close" id="saveLoadClose">×</span></div>
+        <div class="modal-body">
+          <p style="margin-top:0;">Simpan kondisi papan skor saat ini ke salah satu slot, atau muat kembali slot yang tersimpan sebelumnya — seperti save game.</p>
+          <div class="save-slot-list" id="saveSlotList"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="ad-overlay" id="adOverlay">
       <video id="adVideoEl" playsinline></video>
       <div class="ad-audio-visual">
@@ -373,7 +412,9 @@
     <div id="printSheet" class="print-sheet"></div>
 
     <input type="file" id="fileInput" accept="image/*">
-    <input type="file" id="adFileInput" accept="video/*,audio/*" multiple>
+    <input type="file" id="adVideoFileInput" accept="video/*" multiple>
+    <input type="file" id="adAudioFileInput" accept="audio/*" multiple>
+    <input type="file" id="adAttachAudioInput" accept="audio/*">
   </div>
 
 <script>
@@ -413,10 +454,38 @@ let state = {
   bgColor:null, bgImage:null,
   timer:{ elapsedMs:0, running:false, startedAt:null },
   scoreScale:1,
+  crestScale:1,
+  lastScorer:null,
   scoreFont:'default', scoreColor:'#ffffff', scoreStroke:'#d81f2a',
   ads:[],
   shortcuts: Object.assign({}, DEFAULT_SHORTCUTS)
 };
+
+/* Old ad shape was {type:'video'|'audio', src}. New shape is {videoSrc, audioSrc}
+   so a single ad can carry both a video and its own separate audio track. */
+function migrateAds(){
+  if(!Array.isArray(state.ads)) { state.ads = []; return; }
+  state.ads = state.ads.map(a=>{
+    if(a.videoSrc !== undefined || a.audioSrc !== undefined) return a;
+    if(a.type === 'video') return { id:a.id, name:a.name, videoSrc:a.src, audioSrc:null };
+    return { id:a.id, name:a.name, videoSrc:null, audioSrc:a.src };
+  });
+}
+
+function applyStateToUI(){
+  render();
+  applyBackground();
+  applyScoreStyle();
+  renderTimer();
+  document.getElementById('scoreSizeInput').value = Math.round(state.scoreScale*100);
+  document.documentElement.style.setProperty('--score-scale', state.scoreScale);
+  document.getElementById('crestSizeInput').value = Math.round((state.crestScale||1)*100);
+  document.documentElement.style.setProperty('--crest-scale', state.crestScale||1);
+  document.getElementById('fontSelect').value = state.scoreFont;
+  document.getElementById('scoreColorInput').value = state.scoreColor;
+  document.getElementById('scoreStrokeInput').value = state.scoreStroke;
+  document.getElementById('bgColorInput').value = state.bgColor || '#e7e9ea';
+}
 
 function load(){
   try{
@@ -425,20 +494,78 @@ function load(){
       const parsed = JSON.parse(raw);
       state = Object.assign(state, parsed);
       state.shortcuts = Object.assign({}, DEFAULT_SHORTCUTS, parsed.shortcuts || {});
+      migrateAds();
     }
   }catch(e){}
-  render();
-  applyBackground();
-  applyScoreStyle();
-  renderTimer();
-  document.getElementById('scoreSizeInput').value = Math.round(state.scoreScale*100);
-  document.documentElement.style.setProperty('--score-scale', state.scoreScale);
-  document.getElementById('fontSelect').value = state.scoreFont;
-  document.getElementById('scoreColorInput').value = state.scoreColor;
-  document.getElementById('scoreStrokeInput').value = state.scoreStroke;
-  document.getElementById('bgColorInput').value = state.bgColor || '#e7e9ea';
+  applyStateToUI();
 }
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+/* ==================== SAVE / LOAD GAME SLOTS ==================== */
+const SAVE_SLOTS = 5;
+function slotKey(i){ return STORAGE_KEY + '_slot' + i; }
+function getSlotData(i){
+  try{
+    const raw = localStorage.getItem(slotKey(i));
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function renderSaveSlots(){
+  const list = document.getElementById('saveSlotList');
+  if(!list) return;
+  list.innerHTML = '';
+  for(let i=1;i<=SAVE_SLOTS;i++){
+    const data = getSlotData(i);
+    const row = document.createElement('div');
+    row.className = 'save-slot-row';
+    const info = data
+      ? (data.state.nameA+' vs '+data.state.nameB+'<br><span>'+new Date(data.savedAt).toLocaleString('id-ID')+'</span>')
+      : '<span>Slot kosong</span>';
+    row.innerHTML =
+      '<div class="save-slot-info"><b>Slot '+i+'</b><br>'+info+'</div>'+
+      '<div class="save-slot-actions">'+
+      '<button class="slot-save" data-idx="'+i+'">Simpan</button>'+
+      (data ? '<button class="slot-load" data-idx="'+i+'">Muat</button><button class="slot-del" data-idx="'+i+'">🗑</button>' : '')+
+      '</div>';
+    list.appendChild(row);
+  }
+  list.querySelectorAll('.slot-save').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const i = b.dataset.idx;
+      if(getSlotData(i) && !confirm('Timpa data di Slot '+i+'?')) return;
+      localStorage.setItem(slotKey(i), JSON.stringify({ state: state, savedAt: Date.now() }));
+      renderSaveSlots();
+    });
+  });
+  list.querySelectorAll('.slot-load').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const i = b.dataset.idx;
+      const data = getSlotData(i);
+      if(!data) return;
+      if(!confirm('Muat Slot '+i+'? Perubahan yang belum disimpan pada papan skor saat ini akan hilang.')) return;
+      state = Object.assign({}, state, data.state);
+      state.shortcuts = Object.assign({}, DEFAULT_SHORTCUTS, data.state.shortcuts || {});
+      migrateAds();
+      save();
+      applyStateToUI();
+      closeSaveLoadModal();
+    });
+  });
+  list.querySelectorAll('.slot-del').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const i = b.dataset.idx;
+      if(!confirm('Hapus Slot '+i+'?')) return;
+      localStorage.removeItem(slotKey(i));
+      renderSaveSlots();
+    });
+  });
+}
+const saveLoadBackdrop = document.getElementById('saveLoadBackdrop');
+function openSaveLoadModal(){ renderSaveSlots(); saveLoadBackdrop.classList.add('open'); }
+function closeSaveLoadModal(){ saveLoadBackdrop.classList.remove('open'); }
+document.getElementById('saveLoadBtn').addEventListener('click', openSaveLoadModal);
+document.getElementById('saveLoadClose').addEventListener('click', closeSaveLoadModal);
+saveLoadBackdrop.addEventListener('click', (e)=>{ if(e.target === saveLoadBackdrop) closeSaveLoadModal(); });
 
 const el = {
   nameA: document.getElementById('nameA'),
@@ -465,6 +592,8 @@ function render(){
   el.nameB.textContent = state.nameB;
   el.scoreA.querySelector('.side-score').textContent = state.scoreA;
   el.scoreB.querySelector('.side-score').textContent = state.scoreB;
+  el.scoreA.classList.toggle('scored', state.lastScorer === 'A');
+  el.scoreB.classList.toggle('scored', state.lastScorer === 'B');
   el.setsA.childNodes[0].nodeValue = state.setsA;
   el.setsB.childNodes[0].nodeValue = state.setsB;
 
@@ -564,12 +693,25 @@ function syncNumWidths(){
     fitTeamName(node);
     save();
   });
+  /* When the name is deleted entirely, contenteditable can leave behind a
+     stray <br> so the element never truly registers as empty, which used
+     to make it collapse and become unclickable. Normalize on blur so the
+     placeholder shows and the field stays clickable to type into again. */
+  node.addEventListener('blur', ()=>{
+    if(!node.textContent.trim()){
+      node.innerHTML = '';
+      if(node===el.nameA) state.nameA = '';
+      if(node===el.nameB) state.nameB = '';
+      save();
+    }
+  });
 });
 
 /* ---- score adjust (manual — no automatic set-end detection) ---- */
 function adjustScore(team, delta){
   const key = 'score'+team;
   state[key] = Math.max(0, state[key]+delta);
+  if(delta > 0) state.lastScorer = team;
   render(); save();
 }
 /* Manual set-end: keeps the score visible until the operator ends the set on
@@ -581,6 +723,7 @@ function endCurrentSet(){
   if(state.scoreA > state.scoreB) state.setsA++; else if(state.scoreB > state.scoreA) state.setsB++;
   state.scoreA = 0; state.scoreB = 0;
   state.vcA=0; state.vcB=0; state.toA=0; state.toB=0; state.subA=0; state.subB=0;
+  state.lastScorer = null;
   render(); save();
 }
 
@@ -593,11 +736,11 @@ function bindCounter(node, getVal, setVal, opts){
   const start = ()=>{
     held=false;
     if(!editMode) return;
-    timer = setTimeout(()=>{ held=true; setVal(Math.max(0, getVal()-1)); render(); save(); if(opts.afterDec) opts.afterDec(); }, 550);
+    timer = setTimeout(()=>{ held=true; setVal(Math.max(0, getVal()-1)); if(opts.afterDec) opts.afterDec(); render(); save(); }, 550);
   };
   const end = ()=>{
     clearTimeout(timer);
-    if(!held){ setVal(getVal()+1); render(); save(); if(opts.afterInc) opts.afterInc(); }
+    if(!held){ setVal(getVal()+1); if(opts.afterInc) opts.afterInc(); render(); save(); }
   };
   const cancel = ()=> clearTimeout(timer);
   node.addEventListener('mousedown', start);
@@ -605,10 +748,10 @@ function bindCounter(node, getVal, setVal, opts){
   node.addEventListener('mouseleave', cancel);
   node.addEventListener('touchstart', start, {passive:true});
   node.addEventListener('touchend', (e)=>{ e.preventDefault(); end(); });
+  /* Right-click always decrements, in or out of edit mode. */
   node.addEventListener('contextmenu', (e)=>{
     e.preventDefault();
-    if(!editMode) return;
-    setVal(Math.max(0,getVal()-1)); render(); save(); if(opts.afterDec) opts.afterDec();
+    setVal(Math.max(0,getVal()-1)); if(opts.afterDec) opts.afterDec(); render(); save();
   });
 }
 function addMinusBtn(parent, onClick){
@@ -628,8 +771,8 @@ function addMinusBtn(parent, onClick){
   parent.appendChild(btn);
 }
 
-bindCounter(el.scoreA, ()=>state.scoreA, v=>state.scoreA=v);
-bindCounter(el.scoreB, ()=>state.scoreB, v=>state.scoreB=v);
+bindCounter(el.scoreA, ()=>state.scoreA, v=>state.scoreA=v, { afterInc:()=>{ state.lastScorer='A'; } });
+bindCounter(el.scoreB, ()=>state.scoreB, v=>state.scoreB=v, { afterInc:()=>{ state.lastScorer='B'; } });
 addMinusBtn(el.scoreA, ()=>adjustScore('A',-1));
 addMinusBtn(el.scoreB, ()=>adjustScore('B',-1));
 
@@ -658,7 +801,7 @@ el.fileInput.addEventListener('change', (e)=>{
   const reader = new FileReader();
   reader.onload = ()=>{
     if(uploadTarget === 'bgImage'){
-      state.bgImage = reader.result; state.bgColor = null;
+      state.bgImage = reader.result;
       applyBackground(); save();
     } else if(uploadTarget.startsWith('sponsor:')){
       const part = uploadTarget.split(':')[1];
@@ -675,26 +818,27 @@ el.fileInput.addEventListener('change', (e)=>{
 });
 
 /* ---- background ----
-   FIX: when a custom bgColor is chosen we must explicitly clear the
-   background-image to 'none' — setting it to '' only removes the inline
-   override and falls back to the CSS gradient, which visually hides any
-   solid color underneath it (this was why "Warna Latar" looked broken). */
+   Color and image now combine instead of being mutually exclusive: the color
+   is always applied as backgroundColor, and if an image is also set it draws
+   on top — so a transparent PNG lets the chosen color show through it.
+   FIX: when a custom bgColor is chosen (and there's no image) we must
+   explicitly clear the background-image to 'none' — setting it to '' only
+   removes the inline override and falls back to the CSS gradient, which
+   visually hides the solid color underneath it. */
 function applyBackground(){
+  el.stage.style.backgroundColor = state.bgColor || '';
   if(state.bgImage){
     el.stage.style.backgroundImage = 'url(' + state.bgImage + ')';
     el.stage.style.backgroundSize = 'cover';
     el.stage.style.backgroundPosition = 'center';
-    el.stage.style.backgroundColor = '';
   } else if(state.bgColor){
     el.stage.style.backgroundImage = 'none';
-    el.stage.style.backgroundColor = state.bgColor;
   } else {
     el.stage.style.backgroundImage = '';
-    el.stage.style.backgroundColor = '';
   }
 }
 document.getElementById('bgColorInput').addEventListener('input', (e)=>{
-  state.bgColor = e.target.value; state.bgImage = null;
+  state.bgColor = e.target.value;
   applyBackground(); save();
 });
 document.getElementById('bgImageBtn').addEventListener('click', ()=>{ uploadTarget='bgImage'; el.fileInput.click(); });
@@ -706,6 +850,13 @@ document.getElementById('bgResetBtn').addEventListener('click', ()=>{
 document.getElementById('scoreSizeInput').addEventListener('input', (e)=>{
   state.scoreScale = Number(e.target.value)/100;
   document.documentElement.style.setProperty('--score-scale', state.scoreScale);
+  save();
+});
+
+/* ---- club logo (crest) size setting ---- */
+document.getElementById('crestSizeInput').addEventListener('input', (e)=>{
+  state.crestScale = Number(e.target.value)/100;
+  document.documentElement.style.setProperty('--crest-scale', state.crestScale);
   save();
 });
 
@@ -896,11 +1047,14 @@ document.getElementById('swapBtn').addEventListener('click', ()=>{
     const parts = s.split('-');
     return parts[1] + '-' + parts[0];
   });
+  if(state.lastScorer === 'A') state.lastScorer = 'B';
+  else if(state.lastScorer === 'B') state.lastScorer = 'A';
   render(); save();
 });
 document.getElementById('resetSetBtn').addEventListener('click', ()=>{
   state.scoreA=0; state.scoreB=0;
   state.vcA=0; state.vcB=0; state.toA=0; state.toB=0; state.subA=0; state.subB=0;
+  state.lastScorer = null;
   render(); save();
 });
 document.getElementById('resetAllBtn').addEventListener('click', ()=>{
@@ -944,6 +1098,15 @@ function fadeVolume(mediaEl, from, to, done){
   }, FADE_STEP);
 }
 
+/* An ad is one item that may hold a video (ad.videoSrc), a separate audio
+   track (ad.audioSrc), or both:
+   - video + separate audio  -> video plays silently, the separate audio is
+     what's heard (both fade together).
+   - video only              -> the video's own audio is unmuted and used.
+   - audio only (no video)   -> behaves like the old standalone audio ad,
+     with the on-screen audio visual and "next track" queue. */
+let adAudioAttachIdx = null;
+
 function renderAds(){
   const list = document.getElementById('adsList');
   if(!list) return;
@@ -953,11 +1116,18 @@ function renderAds(){
     return;
   }
   state.ads.forEach((ad, i)=>{
+    const hasVideo = !!ad.videoSrc;
+    const hasAudio = !!ad.audioSrc;
+    const icon = hasVideo ? '🎬' : '🎵';
+    const audioTag = hasVideo ? (hasAudio ? '<span class="ad-audio-tag" title="Audio terpisah terpasang">🎵</span>' : '') : '';
     const row = document.createElement('div');
     row.className = 'ad-row';
     row.innerHTML =
-      '<span class="ad-icon">'+(ad.type==='video' ? '🎬' : '🎵')+'</span>'+
+      '<span class="ad-icon">'+icon+'</span>'+
       '<span class="ad-name" title="'+ad.name.replace(/"/g,'&quot;')+'">'+ad.name+'</span>'+
+      audioTag+
+      (hasVideo ? '<button class="ad-attach-audio" data-idx="'+i+'" title="'+(hasAudio?'Ganti audio terpisah':'Tambah audio terpisah')+'">'+(hasAudio?'🎵↺':'🎵+')+'</button>' : '')+
+      (hasVideo && hasAudio ? '<button class="ad-remove-audio" data-idx="'+i+'" title="Hapus audio terpisah, pakai suara video">🎵×</button>' : '')+
       '<button class="ad-play" data-idx="'+i+'">▶</button>'+
       '<button class="ad-del" data-idx="'+i+'">🗑</button>';
     list.appendChild(row);
@@ -975,22 +1145,40 @@ function renderAds(){
       render(); save();
     });
   });
+  list.querySelectorAll('.ad-attach-audio').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      adAudioAttachIdx = Number(b.dataset.idx);
+      document.getElementById('adAttachAudioInput').click();
+    });
+  });
+  list.querySelectorAll('.ad-remove-audio').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const idx = Number(b.dataset.idx);
+      const ad = state.ads[idx];
+      if(!ad) return;
+      if(activeAd && activeAd.id === ad.id) stopAd(true);
+      ad.audioSrc = null;
+      render(); save();
+    });
+  });
 }
 
-document.getElementById('adAddBtnPanel').addEventListener('click', ()=>{
-  document.getElementById('adFileInput').click();
+document.getElementById('adAddVideoBtnPanel').addEventListener('click', ()=>{
+  document.getElementById('adVideoFileInput').click();
 });
-document.getElementById('adFileInput').addEventListener('change', (e)=>{
+document.getElementById('adAddAudioBtnPanel').addEventListener('click', ()=>{
+  document.getElementById('adAudioFileInput').click();
+});
+document.getElementById('adVideoFileInput').addEventListener('change', (e)=>{
   const files = Array.from(e.target.files || []);
   if(!files.length) return;
   let remaining = files.length;
   files.forEach(file=>{
     const reader = new FileReader();
     reader.onload = ()=>{
-      const type = file.type.startsWith('video') ? 'video' : 'audio';
       state.ads.push({
         id: 'ad_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
-        type, name: file.name, src: reader.result
+        name: file.name, videoSrc: reader.result, audioSrc: null
       });
       remaining--;
       if(remaining === 0){ renderAds(); save(); }
@@ -999,38 +1187,96 @@ document.getElementById('adFileInput').addEventListener('change', (e)=>{
   });
   e.target.value = '';
 });
+document.getElementById('adAudioFileInput').addEventListener('change', (e)=>{
+  const files = Array.from(e.target.files || []);
+  if(!files.length) return;
+  let remaining = files.length;
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      state.ads.push({
+        id: 'ad_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+        name: file.name, videoSrc: null, audioSrc: reader.result
+      });
+      remaining--;
+      if(remaining === 0){ renderAds(); save(); }
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+});
+document.getElementById('adAttachAudioInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  const idx = adAudioAttachIdx;
+  adAudioAttachIdx = null;
+  if(!file || idx === null || !state.ads[idx]){ e.target.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    const ad = state.ads[idx];
+    ad.audioSrc = reader.result;
+    if(activeAd && activeAd.id === ad.id) stopAd(true);
+    renderAds(); save();
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
 
 function playAd(ad){
   if(!ad) return;
   activeAd = ad;
+  const hasVideo = !!ad.videoSrc;
+  const hasAudio = !!ad.audioSrc;
   adOverlay.classList.remove('mode-video','mode-audio');
-  adOverlay.classList.add(ad.type === 'video' ? 'mode-video' : 'mode-audio');
+  adOverlay.classList.add(hasVideo ? 'mode-video' : 'mode-audio');
   adOverlay.classList.add('open');
 
-  if(ad.type === 'video'){
-    adAudioEl.pause();
-    adVideoEl.src = ad.src;
-    adVideoEl.loop = true;
-    adVideoEl.muted = false;
-    adVideoEl.volume = 0;
-    adVideoEl.currentTime = 0;
-    const playPromise = adVideoEl.play();
-    if(playPromise && playPromise.catch) playPromise.catch(()=>{});
-    fadeVolume(adVideoEl, 0, 1);
+  if(hasVideo){
+    if(hasAudio){
+      /* Separate audio track drives the sound; the video plays silently. */
+      adVideoEl.src = ad.videoSrc;
+      adVideoEl.loop = true;
+      adVideoEl.muted = true;
+      adVideoEl.volume = 0;
+      adVideoEl.currentTime = 0;
+      const vp = adVideoEl.play();
+      if(vp && vp.catch) vp.catch(()=>{});
+
+      adAudioEl.pause();
+      adAudioEl.src = ad.audioSrc;
+      adAudioEl.dataset.adId = ad.id;
+      adAudioEl.loop = true;
+      adAudioEl.currentTime = 0;
+      adAudioEl.volume = 0;
+      const ap = adAudioEl.play();
+      if(ap && ap.catch) ap.catch(()=>{});
+      fadeVolume(adAudioEl, 0, 1);
+    } else {
+      /* No separate audio: use the video's own soundtrack. */
+      adAudioEl.pause();
+      adVideoEl.src = ad.videoSrc;
+      adVideoEl.loop = true;
+      adVideoEl.muted = false;
+      adVideoEl.volume = 0;
+      adVideoEl.currentTime = 0;
+      const vp = adVideoEl.play();
+      if(vp && vp.catch) vp.catch(()=>{});
+      fadeVolume(adVideoEl, 0, 1);
+    }
   } else {
+    /* Audio-only ad: no video, show the audio visual. */
     adVideoEl.pause();
     adVideoEl.removeAttribute('src');
     adVideoEl.load();
     adAudioName.textContent = ad.name;
     if(adAudioEl.dataset.adId !== ad.id){
-      adAudioEl.src = ad.src;
+      adAudioEl.src = ad.audioSrc;
       adAudioEl.dataset.adId = ad.id;
       adAudioEl.currentTime = adAudioPositions[ad.id] || 0;
     }
     adAudioEl.loop = true;
     adAudioEl.volume = 0;
-    const playPromise = adAudioEl.play();
-    if(playPromise && playPromise.catch) playPromise.catch(()=>{});
+    const ap = adAudioEl.play();
+    if(ap && ap.catch) ap.catch(()=>{});
     fadeVolume(adAudioEl, 0, 1);
   }
 }
@@ -1038,26 +1284,31 @@ function playAd(ad){
 function stopAd(instant){
   if(!activeAd) return;
   const ad = activeAd;
+  const hasVideo = !!ad.videoSrc;
+  const hasAudio = !!ad.audioSrc;
   const finish = ()=>{
     adOverlay.classList.remove('open');
-    if(ad.type === 'video'){
+    if(hasVideo){
       adVideoEl.pause();
       adVideoEl.removeAttribute('src');
       adVideoEl.load();
-    } else {
+    }
+    if(hasAudio){
       adAudioEl.pause();
-      adAudioPositions[ad.id] = adAudioEl.currentTime;
+      if(!hasVideo) adAudioPositions[ad.id] = adAudioEl.currentTime; // resume position only matters for audio-only ads
     }
     activeAd = null;
   };
   if(instant){ finish(); return; }
-  if(ad.type === 'video') fadeVolume(adVideoEl, adVideoEl.volume, 0, finish);
-  else fadeVolume(adAudioEl, adAudioEl.volume, 0, finish);
+  /* Fade whichever element is actually producing the sound. */
+  if(hasVideo && !hasAudio) fadeVolume(adVideoEl, adVideoEl.volume, 0, finish);
+  else if(hasAudio) fadeVolume(adAudioEl, adAudioEl.volume, 0, finish);
+  else finish();
 }
 
 function nextAudioAd(){
-  if(!activeAd || activeAd.type !== 'audio') return;
-  const audioAds = state.ads.filter(a=>a.type === 'audio');
+  if(!activeAd || activeAd.videoSrc) return; // queue only applies to audio-only ads
+  const audioAds = state.ads.filter(a=>!a.videoSrc && a.audioSrc);
   if(audioAds.length < 2) return;
   const curIdx = audioAds.findIndex(a=>a.id === activeAd.id);
   adAudioPositions[activeAd.id] = adAudioEl.currentTime;
